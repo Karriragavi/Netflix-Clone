@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #141414;
+            color: white;
+            text-align: center;
+        }
+        h1 {
+            color: red;
+        }
+        select, button {
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .movie-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .movie {
+            background: #222;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px;
+            width: 200px;
+            text-align: center;
+        }
+        .wishlist-icon {
+            cursor: pointer;
+            color: white;
+            font-size: 20px;
+        }
+        .wishlist-icon:hover {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎬 Netflix Clone</h1>
+
+    <!-- Profile Selection -->
+    <label for="profile">Select Profile:</label>
+    <select id="profile">
+        <option value="1">Mine</option>
+        <option value="2">Mom's</option>
+        <option value="3">Dad's</option>
+    </select>
+
+    <!-- Genre and Language Filters -->
+    <label for="genre">Genre:</label>
+    <select id="genre">
+        <option value="">All</option>
+        <option value="Sci-Fi">Sci-Fi</option>
+        <option value="Thriller">Thriller</option>
+        <option value="Drama">Drama</option>
+        <option value="Action">Action</option>
+        <option value="Animation">Animation</option>
+        <option value="Crime">Crime</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Romance">Romance</option>
+    </select>
+
+    <label for="language">Language:</label>
+    <select id="language">
+        <option value="">All</option>
+        <option value="English">English</option>
+        <option value="Korean">Korean</option>
+        <option value="Hindi">Hindi</option>
+        <option value="Japanese">Japanese</option>
+    </select>
+
+    <button onclick="loadMovies()">Filter Movies</button>
+
+    <!-- Movie Display -->
+    <h2>📽 Movies</h2>
+    <div class="movie-container" id="movies"></div>
+
+    <h2>❤️ My Wishlist</h2>
+    <div class="movie-container" id="wishlist"></div>
+
+    <script>
+        async function loadMovies() {
+            try {
+                let response = await fetch("http://localhost:3000/movies");
+                let movies = await response.json();
+
+                // Default Movies (if API fails)
+                if (!Array.isArray(movies) || movies.length === 0) {
+                    movies = [
+                        { id: 1, title: "Inception", genre: "Sci-Fi", language: "English" },
+                        { id: 2, title: "Parasite", genre: "Thriller", language: "Korean" },
+                        { id: 3, title: "Dangal", genre: "Drama", language: "Hindi" },
+                        { id: 4, title: "Avengers", genre: "Action", language: "English" },
+                        { id: 5, title: "Spirited Away", genre: "Animation", language: "Japanese" }
+                    ];
+                }
+
+                // Apply Filters
+                let genre = document.getElementById("genre").value;
+                let language = document.getElementById("language").value;
+
+                if (genre) {
+                    movies = movies.filter(movie => movie.genre === genre);
+                }
+                if (language) {
+                    movies = movies.filter(movie => movie.language === language);
+                }
+
+                displayMovies(movies);
+            } catch (error) {
+                console.error("Error loading movies:", error);
+            }
+        }
+
+        function displayMovies(movies) {
+            let container = document.getElementById("movies");
+            container.innerHTML = "";
+
+            movies.forEach(movie => {
+                let movieDiv = document.createElement("div");
+                movieDiv.classList.add("movie");
+                movieDiv.innerHTML = `
+                    <h3>${movie.title}</h3>
+                    <p>${movie.genre} - ${movie.language}</p>
+                    <span class="wishlist-icon" onclick="addToWishlist(${movie.id})">❤️</span>
+                `;
+                container.appendChild(movieDiv);
+            });
+        }
+
+        async function loadWishlist() {
+            let profileId = document.getElementById("profile").value;
+            let response = await fetch(`http://localhost:3000/wishlist/${profileId}`);
+            let wishlist = await response.json();
+            displayWishlist(wishlist);
+        }
+
+        function displayWishlist(movies) {
+            let container = document.getElementById("wishlist");
+            container.innerHTML = "";
+            movies.forEach(movie => {
+                let movieDiv = document.createElement("div");
+                movieDiv.classList.add("movie");
+                movieDiv.innerHTML = `<h3>${movie.title}</h3> <p>${movie.genre} - ${movie.language}</p>`;
+                container.appendChild(movieDiv);
+            });
+        }
+
+        async function addToWishlist(movieId) {
+            let profileId = document.getElementById("profile").value;
+            await fetch("http://localhost:3000/wishlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ profile_id: profileId, movie_id: movieId })
+            });
+            loadWishlist();
+        }
+
+        document.getElementById("profile").addEventListener("change", loadWishlist);
+
+        // Load default movies & wishlist on page load
+        loadMovies();
+        loadWishlist();
+    </script>
+
+</body>
+</html>
